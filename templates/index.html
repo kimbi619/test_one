@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Registration Form</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+        }
+        .button-group {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+        }
+        .error {
+            color: red;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .success {
+            color: green;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .id-info {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .id-input {
+            width: 150px !important;
+        }
+        .id-hint {
+            color: #666;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+            <div class="success">{{ success }}</div>
+        {% endif %}
+        <form action="/submit" method="POST">
+            <div class="form-group">
+                <label for="id_number">ID Number:</label>
+                <div class="id-info">
+                    <input type="number" id="id_number" name="id_number" 
+                           class="id-input" required
+                           min="1" max="999999999999"
+                           value="{{ data.id_number if data else next_id }}">
+                    <span class="id-hint">Next available ID: {{ next_id }}</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required 
+                       pattern="[A-Za-z\s]+" title="Only letters and spaces allowed"
+                       value="{{ data.name if data else '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="surname">Surname:</label>
+                <input type="text" id="surname" name="surname" required 
+                       pattern="[A-Za-z\s]+" title="Only letters and spaces allowed"
+                       value="{{ data.surname if data else '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="date_of_birth">Date of Birth:</label>
+                <input type="text" id="date_of_birth" name="date_of_birth" required 
+                       value="{{ data.date_of_birth if data else '' }}">
+            </div>
+            
+            <div class="button-group">
+                <button type="submit">POST</button>
+                <button type="reset" onclick="resetForm()">CANCEL</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const datePicker = flatpickr("#date_of_birth", {
+            dateFormat: "d/m/Y",
+            maxDate: "today",
+            allowInput: true
+        });
+
+        function resetForm() {
+            document.getElementById('id_number').value = '{{ next_id }}';
+            document.getElementById('name').value = '';
+            document.getElementById('surname').value = '';
+            datePicker.clear();
+        }
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const name = document.getElementById('name').value;
+            const surname = document.getElementById('surname').value;
+            
+            if (!/^[A-Za-z\s]+$/.test(name) || !/^[A-Za-z\s]+$/.test(surname)) {
+                alert('Name and surname must contain only letters and spaces');
+                e.preventDefault();
+                return;
+            }
+        });
+    </script>
+</body>
+</html> 
