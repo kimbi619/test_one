@@ -56,31 +56,9 @@ sudo systemctl start mongod
 sudo systemctl enable mongod
 ```
 
-### 3. Application Setup
 
-1. Create a new directory for your project:
-```bash
-mkdir user_registration_system
-cd user_registration_system
-```
 
-2. Create the required files:
-```bash
-# Create server.py and index.html files
-touch server.py index.html requirements.txt
-```
-
-3. Copy the provided code into the respective files:
-- `server.py`: Copy the server code
-- `index.html`: Copy the HTML code
-- `requirements.txt`: Add the dependencies
-
-4. Install the required Python packages:
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Database Setup
+### 3. Database Setup
 
 1. Start MongoDB service (if not already running):
 ```bash
@@ -96,18 +74,19 @@ sudo systemctl start mongod
 
 2. The application will automatically create the database `test_one_db` when it first runs.
 
-### 5. Running the Application
+
+### 4. Running the Application
 
 1. Start the server:
 ```bash
-python server.py
+python app.py
 ```
 
 2. Access the application:
 - Open your web browser
-- Navigate to `http://localhost:8000`
+- Navigate to `http://127.0.0.1:5000`
 
-### 6. Using the Application
+### 5. Using the Application
 
 #### Adding a New User:
 1. Fill in the registration form:
@@ -118,21 +97,26 @@ python server.py
 2. Click "POST" to submit
 3. The form will show success or error messages
 
-#### Viewing Records:
-The current implementation doesn't include a view records page. To view records, you can use MongoDB Compass or the MongoDB shell:
+#### Viewing Records
+To view all registered users:
+1. Start the application
+2. Navigate to `http://127.0.0.1:5000/views` in your web browser
+3. You will see a table displaying all registered users with their details
 
-1. Using MongoDB Shell:
+### Database Management
+The application includes a utility script (`clear_db.py`) to manage the database:
+
+1. To clear all records from the database:
 ```bash
-mongosh
-use test_one_db
-db.users.find()
+python clear_db.py
 ```
 
-2. Using MongoDB Compass:
-- Download and install [MongoDB Compass](https://www.mongodb.com/try/download/compass)
-- Connect to `mongodb://localhost:27017`
-- Navigate to `test_one_db` database
-- View the `users` collection
+This will:
+- Connect to the `test_one_db` database
+- Remove all user records
+- Display a success message when complete
+
+**Warning**: This action cannot be undone. Use with caution in production environments.
 
 ## Troubleshooting
 
@@ -153,44 +137,12 @@ sudo systemctl status mongod
 
 2. **Port Already in Use**
 ```
-Change the port in server.py:
+Change the port in app.py:
 run_server(port=8001)  # or any other available port
 ```
 
 3. **Permission Denied**
 ```bash
 # Linux/macOS
-sudo chmod +x server.py
+sudo chmod +x app.py
 ```
-
-### Security Notes
-
-- This is a basic implementation and should not be used in production without additional security measures
-- Consider adding:
-  - Input sanitization
-  - CSRF protection
-  - SSL/TLS
-  - User authentication
-  - Rate limiting
-
-## File Structure
-```
-user_registration_system/
-├── server.py           # Main server implementation
-├── index.html         # Frontend interface
-└── requirements.txt   # Python dependencies
-```
-
-## Dependencies
-- mongoengine==0.27.0
-- pymongo==4.6.1
-
-## Contributing
-To contribute to this project:
-1. Fork the repository
-2. Create a new branch
-3. Make your changes
-4. Submit a pull request
-
-## License
-This project is open-source and available under the MIT License.

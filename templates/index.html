@@ -113,7 +113,7 @@
     </div>
 
     <script>
-        // Initialize date picker
+
         const datePicker = flatpickr("#date_of_birth", {
             dateFormat: "d/m/Y",
             maxDate: "today",
@@ -131,18 +131,15 @@
             document.getElementById('success').style.display = 'none';
         }
 
-        // Add ID number input validation
+
         document.getElementById('id_number').addEventListener('input', function(e) {
-            // Remove any non-digits
             this.value = this.value.replace(/\D/g, '');
             
-            // Limit to 13 digits
             if (this.value.length > 13) {
                 this.value = this.value.slice(0, 13);
             }
         });
 
-        // Validate ID number matches date of birth
         function validateIdWithDob() {
             const idNumber = document.getElementById('id_number').value;
             const dateStr = document.getElementById('date_of_birth').value;
@@ -153,7 +150,7 @@
                 const dobDate = date.getFullYear().toString().substr(-2) +
                               (date.getMonth() + 1).toString().padStart(2, '0') +
                               date.getDate().toString().padStart(2, '0');
-                
+                              validateIdWithDob
                 if (idDate !== dobDate) {
                     document.getElementById('error').textContent = 
                         'ID number does not match date of birth';
@@ -168,7 +165,6 @@
             e.preventDefault();
             hideMessages();
 
-            // Validate ID matches DOB before submission
             if (!validateIdWithDob()) {
                 return;
             }

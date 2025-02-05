@@ -58,7 +58,6 @@ def validate_sa_id(id_number, date_of_birth):
         if not (0 <= gender_digits <= 9999):
             return False, "Invalid gender digits in ID Number"
         
-        # Validate citizenship digit (11)
         citizenship = int(id_number[10])
         if citizenship not in [0, 1]:
             return False, "Invalid citizenship digit in ID Number"
@@ -81,6 +80,10 @@ def validate_date_format(date_str):
     except ValueError:
         return None
 
+
+
+
+## PAGE ROUTES  
 
 @app.route('/')
 def index():
@@ -123,13 +126,13 @@ def submit():
         if not is_id_available(id_number):
             return {'error': f"ID Number {id_number} already exists in the database"}
 
-        # Save user
         user = User(
             name=name,
             surname=surname,
             id_number=id_number,
             date_of_birth=date_of_birth
         )
+        
         user.save()
 
         return {
@@ -145,12 +148,30 @@ def submit():
 @app.route('/view')
 def view_records():
     try:
-        # Get all users, sorted by creation date
         users = User.objects.order_by('-created_at')
         return render_template('view_records.html', users=users)
     except Exception as e:
         return render_template('view_records.html', error=str(e))
 
+
+
+@app.route('/api/users')
+def get_users():
+    try:
+        users = User.objects.order_by('-created_at')
+        return jsonify({
+            'success': True,
+            'users': [{
+                'name': user.name,
+                'surname': user.surname,
+                'id_number': user.id_number,
+                'date_of_birth': user.date_of_birth.strftime('%d/%m/%Y'),
+                'created_at': user.created_at.strftime('%d/%m/%Y %H:%M')
+            } for user in users]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
