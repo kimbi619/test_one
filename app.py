@@ -1,16 +1,17 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from datetime import datetime
 from mongoengine import Document, IntField, StringField, DateTimeField, connect
 import re
 
+
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
+app.secret_key = 'dn??21//2&*fsdjiwi32ouh832oew32@#@$@#asdainfaiandal'
 
 connect('test_one_db')
 
 class User(Document):
     
-    id_number = IntField(required=True, unique=True)
+    id_number = StringField(required=True, unique=True, max_length=13, min_length=13)
 
     name = StringField(required=True)
 
@@ -27,17 +28,45 @@ class User(Document):
 
 
 
+
 def validate_name(name):
     """Validate name/surname to contain only letters and spaces"""
     return bool(re.match(r'^[A-Za-z\s]+$', name))
 
 
-def get_next_available_id():
-    """Find the next available ID by getting the highest current ID and adding 1"""
-    highest_user = User.objects.order_by('-id_number').first()
-    if highest_user:
-        return highest_user.id_number + 1
-    return 1  # Start with 1 if no users exist
+def validate_sa_id(id_number, date_of_birth):
+    """Validate South African ID number"""
+    try:
+        if not re.match(r'^\d{13}$', id_number):
+            return False, "ID Number must be exactly 13 digits"
+        
+        year = id_number[:2]
+        month = id_number[2:4]
+        day = id_number[4:6]
+        
+        dob_year = date_of_birth.strftime('%y')
+        dob_month = date_of_birth.strftime('%m')
+        dob_day = date_of_birth.strftime('%d')
+        
+        # Compare dates
+        if (year != dob_year or 
+            month != dob_month or 
+            day != dob_day):
+            return False, "ID Number does not match Date of Birth"
+        
+        gender_digits = int(id_number[6:10])
+        if not (0 <= gender_digits <= 9999):
+            return False, "Invalid gender digits in ID Number"
+        
+        # Validate citizenship digit (11)
+        citizenship = int(id_number[10])
+        if citizenship not in [0, 1]:
+            return False, "Invalid citizenship digit in ID Number"
+        
+        return True, "Valid ID Number"
+        
+    except Exception as e:
+        return False, f"Invalid ID Number format: {str(e)}"
 
 
 def is_id_available(id_number):
@@ -51,81 +80,77 @@ def validate_date_format(date_str):
         return datetime.strptime(date_str, '%d/%m/%Y')
     except ValueError:
         return None
-    
+
 
 @app.route('/')
 def index():
-    next_id = get_next_available_id()
-    return render_template('index.html', next_id=next_id)
+    return render_template('index.html')
 
 
-
-@app.route('/submit', methods=['POST'])
+@app.route('/submit', methods=['GET', 'POST'])
 def submit():
+    if request.method == 'GET':
+        return {'success': True}
+    
     try:
         name = request.form.get('name')
-
         surname = request.form.get('surname')
-
-        requested_id = int(request.form.get('id_number'))
-
+        id_number = request.form.get('id_number')
         date_of_birth_str = request.form.get('date_of_birth')
 
         form_data = {
             'name': name,
             'surname': surname,
-            'id_number': requested_id,
+            'id_number': id_number,
             'date_of_birth': date_of_birth_str
         }
 
         # Validate name and surname
         if not validate_name(name) or not validate_name(surname):
-            return render_template('index.html', 
-                                error="Name and surname must contain only letters and spaces",
-                                data=form_data,
-                                next_id=get_next_available_id())
+            return {'error': "Name and surname must contain only letters and spaces"}
 
         # Validate date format
         date_of_birth = validate_date_format(date_of_birth_str)
         if not date_of_birth:
-            return render_template('index.html', 
-                                error="Invalid date format",
-                                data=form_data,
-                                next_id=get_next_available_id())
+            return {'error': "Invalid date format. Use DD/MM/YYYY"}
 
-        next_id = get_next_available_id()
-        
+        # Validate ID number
+        is_valid_id, id_message = validate_sa_id(id_number, date_of_birth)
+        if not is_valid_id:
+            return {'error': id_message}
 
-        if not is_id_available(requested_id):
-            actual_id = next_id
-            message = f"ID {requested_id} was already taken. Saved with ID: {actual_id}"
-        else:
-            actual_id = requested_id
-            message = f"Data saved successfully with ID: {actual_id}"
+        # Check for duplicate ID
+        if not is_id_available(id_number):
+            return {'error': f"ID Number {id_number} already exists in the database"}
 
-
+        # Save user
         user = User(
             name=name,
             surname=surname,
-            id_number=actual_id,
+            id_number=id_number,
             date_of_birth=date_of_birth
         )
         user.save()
-        
 
-        next_id = get_next_available_id()
-        return render_template('index.html', 
-                            success=message,
-                            next_id=next_id)
+        return {
+            'success': "Data saved successfully",
+            'id_number': id_number
+        }
 
     except Exception as e:
-        return render_template('index.html', 
-                            error=f"An error occurred: {str(e)}",
-                            data=form_data,
-                            next_id=get_next_available_id())
+        return {'error': f"An error occurred: {str(e)}"}
+    
 
 
+@app.route('/view')
+def view_records():
+    try:
+        # Get all users, sorted by creation date
+        users = User.objects.order_by('-created_at')
+        return render_template('view_records.html', users=users)
+    except Exception as e:
+        return render_template('view_records.html', error=str(e))
 
-# RUN THE APP
+
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)

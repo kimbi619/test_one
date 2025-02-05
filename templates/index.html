@@ -1,97 +1,108 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>User Registration Form</title>
+    <title>SA User Registration Form</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         .form-container {
-            max-width: 500px;
-            margin: 0 auto;
+            max-width: 600px;
+            margin: 30px auto;
             padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         .form-group {
             margin-bottom: 15px;
         }
-        label {
+        .form-group label {
             display: block;
             margin-bottom: 5px;
+            font-weight: bold;
         }
-        input {
+        .form-group input {
             width: 100%;
             padding: 8px;
-            margin-bottom: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #dc3545;
+            border-radius: 4px;
+            background-color: #f8d7da;
+        }
+        .success {
+            color: #28a745;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #28a745;
+            border-radius: 4px;
+            background-color: #d4edda;
         }
         .button-group {
             margin-top: 20px;
         }
-        button {
+        .button-group button {
             padding: 10px 20px;
             margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
         }
-        .error {
-            color: red;
-            font-size: 0.9em;
-            margin-bottom: 10px;
+        .button-group button[type="submit"] {
+            background-color: #007bff;
+            color: white;
         }
-        .success {
-            color: green;
-            font-size: 0.9em;
-            margin-bottom: 10px;
+        .button-group button[type="reset"] {
+            background-color: #6c757d;
+            color: white;
         }
         .id-info {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .id-input {
-            width: 150px !important;
+            position: relative;
         }
         .id-hint {
+            font-size: 12px;
             color: #666;
-            font-size: 0.9em;
-            font-style: italic;
+            display: block;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
     <div class="form-container">
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
-        {% if success %}
-            <div class="success">{{ success }}</div>
-        {% endif %}
-        <form action="/submit" method="POST">
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="success" class="success" style="display: none;"></div>
+        
+        <form id="userForm">
             <div class="form-group">
-                <label for="id_number">ID Number:</label>
+                <label for="id_number">SA ID Number:</label>
                 <div class="id-info">
-                    <input type="number" id="id_number" name="id_number" 
+                    <input type="text" id="id_number" name="id_number" 
                            class="id-input" required
-                           min="1" max="999999999999"
-                           value="{{ data.id_number if data else next_id }}">
-                    <span class="id-hint">Next available ID: {{ next_id }}</span>
+                           maxlength="14" pattern="\d{13}"
+                           title="Please enter a valid 13-digit South African ID number">
+                    <span class="id-hint">Format: YYMMDDSSSSCAN (13 digits)</span>
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="name">Name:</label>
                 <input type="text" id="name" name="name" required 
-                       pattern="[A-Za-z\s]+" title="Only letters and spaces allowed"
-                       value="{{ data.name if data else '' }}">
+                       pattern="[A-Za-z\s]+" title="Only letters and spaces allowed">
             </div>
             
             <div class="form-group">
                 <label for="surname">Surname:</label>
                 <input type="text" id="surname" name="surname" required 
-                       pattern="[A-Za-z\s]+" title="Only letters and spaces allowed"
-                       value="{{ data.surname if data else '' }}">
+                       pattern="[A-Za-z\s]+" title="Only letters and spaces allowed">
             </div>
             
             <div class="form-group">
                 <label for="date_of_birth">Date of Birth:</label>
-                <input type="text" id="date_of_birth" name="date_of_birth" required 
-                       value="{{ data.date_of_birth if data else '' }}">
+                <input type="text" id="date_of_birth" name="date_of_birth" required>
+                <span class="id-hint">Must match the first 6 digits of ID number (YYMMDD)</span>
             </div>
             
             <div class="button-group">
@@ -102,6 +113,7 @@
     </div>
 
     <script>
+        // Initialize date picker
         const datePicker = flatpickr("#date_of_birth", {
             dateFormat: "d/m/Y",
             maxDate: "today",
@@ -109,22 +121,84 @@
         });
 
         function resetForm() {
-            document.getElementById('id_number').value = '{{ next_id }}';
-            document.getElementById('name').value = '';
-            document.getElementById('surname').value = '';
+            document.getElementById('userForm').reset();
             datePicker.clear();
+            hideMessages();
         }
 
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const name = document.getElementById('name').value;
-            const surname = document.getElementById('surname').value;
+        function hideMessages() {
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('success').style.display = 'none';
+        }
+
+        // Add ID number input validation
+        document.getElementById('id_number').addEventListener('input', function(e) {
+            // Remove any non-digits
+            this.value = this.value.replace(/\D/g, '');
             
-            if (!/^[A-Za-z\s]+$/.test(name) || !/^[A-Za-z\s]+$/.test(surname)) {
-                alert('Name and surname must contain only letters and spaces');
-                e.preventDefault();
+            // Limit to 13 digits
+            if (this.value.length > 13) {
+                this.value = this.value.slice(0, 13);
+            }
+        });
+
+        // Validate ID number matches date of birth
+        function validateIdWithDob() {
+            const idNumber = document.getElementById('id_number').value;
+            const dateStr = document.getElementById('date_of_birth').value;
+            
+            if (idNumber.length === 13 && dateStr) {
+                const date = flatpickr.parseDate(dateStr, "d/m/Y");
+                const idDate = idNumber.substring(0, 6);
+                const dobDate = date.getFullYear().toString().substr(-2) +
+                              (date.getMonth() + 1).toString().padStart(2, '0') +
+                              date.getDate().toString().padStart(2, '0');
+                
+                if (idDate !== dobDate) {
+                    document.getElementById('error').textContent = 
+                        'ID number does not match date of birth';
+                    document.getElementById('error').style.display = 'block';
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        document.getElementById('userForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideMessages();
+
+            // Validate ID matches DOB before submission
+            if (!validateIdWithDob()) {
                 return;
             }
+
+            const formData = new FormData(this);
+            const data = new URLSearchParams(formData);
+
+            fetch('/submit', {
+                method: 'POST',
+                body: data
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    const errorDiv = document.getElementById('error');
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                } else if (data.success) {
+                    const successDiv = document.getElementById('success');
+                    successDiv.textContent = data.success;
+                    successDiv.style.display = 'block';
+                    resetForm();
+                }
+            })
+            .catch(error => {
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = 'An error occurred: ' + error;
+                errorDiv.style.display = 'block';
+            });
         });
     </script>
 </body>
-</html> 
+</html>
